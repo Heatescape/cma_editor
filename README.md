@@ -64,6 +64,8 @@ Original Cotality PDF
 - **Multi-layer fallbacks** — JSON-LD structured data, aria-label patterns, type/value attribute arrays, and HTML regex ensure bed/bath/car are extracted even from non-standard listing formats
 - **5 unique photos per property** — downloads up to 20 candidate URLs, removes duplicates by MD5 hash, keeps the first 5 distinct images; click-to-select in the UI
 - **Fields scraped:** address, suburb, state, postcode, coordinates, bedrooms, bathrooms, carspaces, land size, build size, price, property type, year built, listing date, sold date, days on market, headline, agency name, hero image + gallery
+- **429 rate-limit handling** — automatically retries after 15 s and 45 s when REA returns HTTP 429; randomised per-page delays (3–7 s) and inter-suburb delays (4–9 s) reduce the chance of being rate-limited
+- **Persistent Chrome profile** — saves session cookies to `~/.cma_rea_profile` so the scraper reuses an existing REA login between runs; bypasses bot-detection fingerprinting more effectively than an ephemeral browser
 
 ### Maps
 - **Google Static Maps** integration — each comparable page gets a fresh map tile centred on the subject property
@@ -80,6 +82,8 @@ Original Cotality PDF
 - **Continuous numbering** — Sales 1–N, Listings N+1–M; deleting a property immediately renumbers everything including the other tab; Undo restores the original number
 - **Drag-to-reorder** — map pin numbers follow the list order
 - **Bulk actions** — Fetch All REA, Geocode All, Show/hide all beds/baths/cars/land/build
+- **Auto-find comparables** — searches REA automatically using configurable min–max range filters for beds, baths, cars, land size, and build size; results populate the list for review before importing
+- **Collapsible sections** — click the Step 4 or Step 5 header to collapse/expand the comparable list, keeping the screen tidy when focusing on other steps
 - **5-second undo** — soft-delete with countdown before permanent removal
 - **Offline-first** — only scraping, geocoding, and map tile steps require internet
 - **Auto-shutdown** — server exits 30 seconds after the browser tab closes; no background processes
@@ -223,8 +227,25 @@ Your key is saved in the browser (`localStorage`) — you only need to enter it 
 | Button | Effect |
 |--------|--------|
 | **Fetch All REA** | Scrapes every row that has a URL, one by one, updating live |
+| **Auto-find Comparables** | Searches REA automatically using the filters below and populates the panel with candidate URLs for review |
 | **Geocode All** | Sends all un-geocoded addresses to Google in one batch |
 | **Show all: ✓🛏 ✓🛁 ✓🚗 ✓⬚ ✓⬚** | Toggle bed/bath/car/land/build visibility for all rows at once |
+
+#### Auto-find Filters
+
+The **Auto-find filters** panel (below the sort buttons) controls what REA is searched for:
+
+| Filter | Description |
+|--------|-------------|
+| **🛏 Beds min – max** | Bedroom count range; pre-filled from the subject property |
+| **🛁 Baths min – max** | Bathroom count range; pre-filled from the subject property |
+| **🚗 Cars min – max** | Car space count range; pre-filled from the subject property |
+| **Land m² min – max** | Land size range (houses and land only) |
+| **Build m² min – max** | Building size range (houses only) |
+| **Suburbs** | Additional suburbs to search alongside the subject suburb |
+| **Distance km radius** | Restrict results to properties within N km of the subject |
+
+All filters are optional — uncheck the checkbox to disable that filter for the search. After reviewing the candidate URLs in the result panel, click **Import selected** to add them to the list.
 
 #### Per-Row Controls
 
@@ -467,6 +488,13 @@ The REA page returned a CAPTCHA or bot-detection block.
 - Wait 5 minutes, then try again
 - Verify the URL is still live in your browser
 - This is rare on local machines with a residential IP
+
+### Auto-find returns "HTTP ERROR 429" / rate limited
+REA temporarily blocked the scraper for sending too many requests.
+- The scraper automatically retries after 15 s and 45 s — wait for the retry to complete
+- If it keeps happening, wait a few minutes before running Auto-find again
+- **Persistent profile login** reduces 429s: on first Auto-find the browser opens — log in to realestate.com.au in that window. The session is saved to `~/.cma_rea_profile` and reused on every subsequent run, making the scraper appear as a real logged-in user
+- To disable the persistent profile, set the environment variable `CMA_CHROME_PROFILE=` (empty) before launching
 
 ### "Maps show a grey placeholder box"
 - The Google Maps API key is invalid, or Maps Static API is not enabled
