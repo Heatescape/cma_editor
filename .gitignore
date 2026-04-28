@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Project runtime artifacts
+uploads/
+output/
+.tmp/
+debug_raw.json
+debug_page.html
+
+# Logs
+server.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+.gstack/
