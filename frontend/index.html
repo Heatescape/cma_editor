@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CMA Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --border: #e1e4e8;
+    --text: #1f2328;
+    --muted: #656d76;
+    --primary: #1e40af;
+    --primary-hover: #1e3a8a;
+    --danger: #b91c1c;
+    --success: #15803d;
+    --sold: #1e9ad6;
+    --listing: #d93b3b;
+    --nav-width: 220px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    font-size: 14px;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .pill { font-size: 12px; color: var(--muted); }
+  .layout {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 0;
+  }
+  nav.side-nav {
+    width: var(--nav-width);
+    flex-shrink: 0;
+    padding: 24px 16px;
+    position: sticky;
+    top: 57px;
+    align-self: flex-start;
+    max-height: calc(100vh - 57px);
+    overflow-y: auto;
+  }
+  nav.side-nav .nav-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    color: var(--muted); letter-spacing: 0.5px;
+    padding: 0 12px 8px; margin-bottom: 4px;
+  }
+  nav.side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    color: var(--text); text-decoration: none;
+    border-radius: 6px; font-size: 13px;
+    border-left: 3px solid transparent;
+    margin-bottom: 2px;
+    line-height: 1.3;
+  }
+  nav.side-nav a:hover { background: rgba(30, 64, 175, 0.06); }
+  nav.side-nav a.active {
+    background: rgba(30, 64, 175, 0.08);
+    color: var(--primary); font-weight: 600;
+    border-left-color: var(--primary);
+  }
+  nav.side-nav a .nav-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #e5e7eb; color: var(--muted);
+    font-size: 11px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  nav.side-nav a.active .nav-num {
+    background: var(--primary); color: white;
+  }
+  main {
+    flex: 1;
+    min-width: 0;
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 24px;
+  }
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 20px 24px;
+    scroll-margin-top: 72px;
+  }
+  .step h2 {
+    margin: 0 0 4px; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .step h2 .num {
+    background: var(--primary); color: white;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .step p.hint { margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
+  .step-sticky-bar {
+    position: sticky;
+    top: 57px;
+    z-index: 5;
+    background: var(--panel);
+    margin: -20px -24px 12px;
+    padding: 16px 24px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .feat-bulk-lbl {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 12px; font-weight: 400; cursor: pointer; user-select: none;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 2px 8px; margin: 0;
+  }
+  .feat-bulk-lbl input { margin: 0; }
+  .step-body.collapsed { display: none; }
+  .step-filters.collapsed { display: none; }
+  .step-h2-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+  .step-h2-toggle .chevron { font-size: 16px; color: var(--muted); transition: transform 0.2s; display: inline-block; line-height: 1; }
+  .step-h2-toggle.collapsed .chevron { transform: rotate(-90deg); }
+  .autofind-filters {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .af-row {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin-bottom: 5px;
+  }
+  .af-row > label { font-size: 11px; color: var(--muted); margin: 0; font-weight: 500; white-space: nowrap; }
+  .af-row input[type=number] { width: 58px; padding: 3px 5px; font-size: 12px; }
+  .af-suburb-tags { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .af-suburb-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: #dbeafe; color: #1e40af; border-radius: 4px;
+    padding: 2px 8px; font-size: 11px; font-weight: 500;
+  }
+  .af-suburb-tag .af-rm {
+    background: none; border: none; color: #1e40af;
+    padding: 0 1px; cursor: pointer; font-size: 14px; line-height: 1;
+  }
+  .af-suburb-add {
+    border: 1px dashed #93c5fd; border-radius: 4px;
+    padding: 3px 6px; font-size: 11px; width: 110px;
+  }
+  .af-lock-btn { font-size: 11px; padding: 2px 9px; }
+  .sort-btn { font-size: 11px; padding: 2px 8px; }
+  .drag-handle {
+    cursor: grab; color: var(--muted); font-size: 16px;
+    padding: 0 4px; user-select: none; flex-shrink: 0; line-height: 1;
+  }
+  .comp-row.drag-over { border-color: var(--primary); background: rgba(30,64,175,0.04); }
+  label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px; }
+  input[type=text], input[type=email], input[type=number], input[type=url], textarea, input[type=file] {
+    width: 100%; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit;
+    background: white;
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+  }
+  select {
+    width: 100%; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit;
+    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
+    appearance: none; -webkit-appearance: none;
+    cursor: pointer;
+  }
+  select:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .row { margin-bottom: 12px; }
+  button {
+    background: var(--primary); color: white;
+    border: 0; border-radius: 6px;
+    padding: 8px 16px; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+  button:hover { background: var(--primary-hover); }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.ghost:hover { background: #f8f9fa; }
+  button.danger { background: var(--danger); }
+  .comp-row {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fafbfc;
+    position: relative;
+  }
+  .comp-row .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    color: white; font-size: 11px; font-weight: 600;
+    margin-right: 8px;
+  }
+  .comp-row.sold .badge { background: var(--sold); }
+  .comp-row.listing .badge { background: var(--listing); }
+  .comp-row .close {
+    position: absolute; top: 10px; right: 10px;
+    background: transparent; color: var(--muted);
+    padding: 2px 8px; font-size: 16px;
+  }
+  .comp-row .scrape-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .comp-row .scrape-row input { flex: 1; }
+  .comp-row h4 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    display: flex; align-items: center;
+  }
+  .status {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+    margin-left: 8px;
+  }
+  .status.idle { background: #e5e7eb; color: #374151; }
+  .status.loading { background: #dbeafe; color: #1e40af; }
+  .status.success { background: #dcfce7; color: #166534; }
+  .status.error { background: #fee2e2; color: #991b1b; }
+  .thumb {
+    width: 80px; height: 60px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    background-size: cover; background-position: center;
+    display: inline-block; margin-right: 10px; vertical-align: middle;
+  }
+  .hero-preview {
+    display: inline-block;
+    width: 180px; height: 110px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    background-size: cover; background-position: center;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+  }
+  .toast {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.loading { background: #eef2ff; color: #1e40af; border: 1px solid #c7d2fe; }
+  .toast.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .toast.error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .toast .spinner {
+    width: 12px; height: 12px;
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .add-btn {
+    width: 100%; padding: 10px;
+    border: 2px dashed var(--border); border-radius: 6px;
+    background: transparent; color: var(--muted);
+    cursor: pointer; font-size: 13px;
+  }
+  .add-btn:hover { border-color: var(--primary); color: var(--primary); background: transparent; }
+  #generate-bar {
+    position: sticky; bottom: 0;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px; margin-top: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+  }
+  #generate-bar button { padding: 12px 32px; font-size: 14px; }
+  .info-block {
+    background: #f0f9ff; border: 1px solid #bae6fd;
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 12px; color: #075985;
+    margin-bottom: 14px;
+  }
+  .warning-block {
+    background: #fef3c7; border: 1px solid #fde68a;
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 12px; color: #92400e;
+    margin-bottom: 14px;
+  }
+  #result {
+    display: none;
+    background: #dcfce7; border: 1px solid #86efac;
+    padding: 14px; border-radius: 6px;
+    margin-top: 16px;
+  }
+  #result a { color: var(--success); font-weight: 600; text-decoration: none; }
+  #result.error { background: #fee2e2; border-color: #fca5a5; }
+  #result.error a { color: #991b1b; }
+  #progress-box {
+    display: none;
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  #progress-bar-track {
+    height: 8px; border-radius: 4px;
+    background: #e5e7eb; overflow: hidden; margin-bottom: 10px;
+  }
+  #progress-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: var(--primary);
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  #progress-step { font-size: 13px; color: var(--muted); }
+  #progress-pct  { font-size: 13px; font-weight: 600; color: var(--primary); }
+  #progress-eta  { font-size: 12px; color: var(--muted); }
+  .hidden { display: none !important; }
+  .monospace { font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 12px; }
+  @media (max-width: 900px) {
+    nav.side-nav { display: none; }
+    .layout { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CMA Editor</h1>
+  <span class="pill">Vision Property Investment Group</span>
+</header>
+
+<div class="layout">
+
+<nav class="side-nav" id="side-nav">
+  <div class="nav-title">Sections</div>
+  <a href="#step-1" data-nav="step-1"><span class="nav-num">1</span><span>Upload PDF</span></a>
+  <a href="#step-2" data-nav="step-2"><span class="nav-num">2</span><span>Maps API key</span></a>
+  <a href="#step-3" data-nav="step-3"><span class="nav-num">3</span><span>Subject property</span></a>
+  <a href="#step-4" data-nav="step-4"><span class="nav-num">4</span><span>Comparable sales</span></a>
+  <a href="#step-5" data-nav="step-5"><span class="nav-num">5</span><span>Comparable listings</span></a>
+  <a href="#step-6" data-nav="step-6"><span class="nav-num">6</span><span>Report details</span></a>
+</nav>
+
+<main>
+
+<!-- STEP 1: Upload original PDF -->
+<section class="step" id="step-1">
+  <h2><span class="num">1</span> Upload the original CMA PDF</h2>
+  <p class="hint">Upload the Cotality-generated PDF you want to edit. The logo, cover letter, demographic pages, and disclaimers will be kept unchanged.</p>
+  <input type="file" id="pdf-input" accept="application/pdf">
+  <div id="session-status" style="margin-top: 10px; font-size: 12px; color: var(--muted);"></div>
+</section>
+
+<!-- STEP 2: Google Maps API key -->
+<section class="step" id="step-2">
+  <h2><span class="num">2</span> Google Maps API key</h2>
+  <p class="hint">Used to generate the comparable location maps. Saved in your browser only — not uploaded anywhere except when generating the PDF.</p>
+  <input type="text" id="gmaps-key" placeholder="AIza..." autocomplete="off">
+</section>
+
+<!-- STEP 3: Subject property -->
+<section class="step" id="step-3">
+  <h2><span class="num">3</span> Subject property (cover page)</h2>
+  <p class="hint">This is the property being appraised. The image here replaces the hero image on page 1.</p>
+
+  <div class="row">
+    <label>Replacement hero image for cover page</label>
+    <input type="file" id="hero-input" accept="image/*">
+    <div id="hero-preview" class="hero-preview hidden"></div>
+    <div id="hero-source-note" style="font-size: 11px; color: var(--muted); margin-top: 4px;"></div>
+  </div>
+  <div class="row">
+    <label>Property address</label>
+    <input type="text" id="subject-address" placeholder="13 SYDNEY STREET RIVERSTONE NSW 2765">
+  </div>
+  <div class="grid2" style="align-items: end;">
+    <div>
+      <label>Latitude</label>
+      <input type="number" id="subject-lat" step="0.000001" placeholder="-33.6811">
+    </div>
+    <div>
+      <label>Longitude</label>
+      <input type="number" id="subject-lng" step="0.000001" placeholder="150.8588">
+    </div>
+  </div>
+  <div style="margin-top: 6px;">
+    <button type="button" class="ghost" onclick="lookupCoordinates()" style="font-size: 12px; padding: 5px 12px;">
+      ⊕ Auto-fill coordinates from address
+    </button>
+    <span id="geocode-status" style="font-size: 12px; color: var(--muted); margin-left: 8px;"></span>
+  </div>
+  <div class="row" style="margin-top: 12px;">
+    <label>Property type</label>
+    <select id="subject-property-type" onchange="onSubjectPropertyTypeChange()">
+      <option value="apartment">Apartment</option>
+      <option value="house">House &amp; Land</option>
+      <option value="land">Land Only</option>
+    </select>
+  </div>
+  <div class="grid3" style="margin-top: 12px;">
+    <div>
+      <label style="margin-bottom:6px;"><img src="/static/icons/bed.png" style="height:20px;vertical-align:middle;"></label>
+      <input type="number" id="subject-bed" min="0">
+    </div>
+    <div>
+      <label style="margin-bottom:6px;"><img src="/static/icons/bath.png" style="height:20px;vertical-align:middle;"></label>
+      <input type="number" id="subject-bath" min="0">
+    </div>
+    <div>
+      <label style="margin-bottom:6px;"><img src="/static/icons/car.png" style="height:20px;vertical-align:middle;"></label>
+      <input type="number" id="subject-car" min="0">
+    </div>
+  </div>
+  <div class="grid2" style="margin-top: 8px;">
+    <div>
+      <label style="margin-bottom:6px;"><img src="/static/icons/land.png" style="height:20px;vertical-align:middle;"></label>
+      <input type="number" id="subject-land" min="0" placeholder="465">
+    </div>
+    <div>
+      <label style="margin-bottom:6px;"><img src="/static/icons/build.png" style="height:20px;vertical-align:middle;"></label>
+      <input type="number" id="subject-build" min="0">
+    </div>
+  </div>
+</section>
+
+<!-- STEP 4: Comparable Sales -->
+<section class="step" id="step-4">
+  <div class="step-sticky-bar">
+    <h2 id="sales-h2" class="step-h2-toggle" style="margin-bottom:8px" onclick="toggleStepBody('sales')"><span><span class="num">4</span> Comparable sales (<span id="sales-count">0</span>)</span><span class="chevron">▾</span></h2>
+    <div id="sales-toast" class="toast hidden" style="margin-bottom:6px"></div>
+    <div style="display:flex;gap:8px;">
+      <button style="flex:1" onclick="fetchAll('sales')">Fetch All REA</button>
+      <button style="flex:1" onclick="autoFind('sales')">Auto-find Comparables</button>
+    </div>
+    <div id="sales-filters" class="step-filters">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Show all:</span>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('sales','show_beds',this.checked)"> <img src="/static/icons/bed.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('sales','show_baths',this.checked)"> <img src="/static/icons/bath.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('sales','show_cars',this.checked)"> <img src="/static/icons/car.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('sales','show_land',this.checked)"> <img src="/static/icons/land.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('sales','show_build',this.checked)"> <img src="/static/icons/build.png" style="height:14px;vertical-align:middle"></label>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;margin-top:6px">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Sort:</span>
+      <button class="ghost sort-btn" onclick="sortComparables('sales','price_asc')">$ ↑</button>
+      <button class="ghost sort-btn" onclick="sortComparables('sales','price_desc')">$ ↓</button>
+      <button class="ghost sort-btn" onclick="sortComparables('sales','dist_asc')">km ↑</button>
+      <button class="ghost sort-btn" onclick="sortComparables('sales','dist_desc')">km ↓</button>
+    </div>
+    <div id="sales-autofind-filters" class="autofind-filters"></div>
+    </div>
+  </div>
+  <div class="step-body" id="sales-body">
+  <div id="sales-autofind-panel"></div>
+
+  <div id="sales-list"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="add-btn" style="flex:1" onclick="addComparable('sales')">+ From realestate.com.au</button>
+    <button class="add-btn" style="flex:1" onclick="addManualEntry('sales')">+ Manual entry</button>
+  </div>
+  </div>
+</section>
+
+<!-- STEP 5: Comparable Listings -->
+<section class="step" id="step-5">
+  <div class="step-sticky-bar">
+    <h2 id="listings-h2" class="step-h2-toggle" style="margin-bottom:8px" onclick="toggleStepBody('listings')"><span><span class="num">5</span> Comparable listings (<span id="listings-count">0</span>)</span><span class="chevron">▾</span></h2>
+    <div id="listings-toast" class="toast hidden" style="margin-bottom:6px"></div>
+    <div style="display:flex;gap:8px;">
+      <button style="flex:1" onclick="fetchAll('listings')">Fetch All REA</button>
+      <button style="flex:1" onclick="autoFind('listings')">Auto-find Comparables</button>
+    </div>
+    <div id="listings-filters" class="step-filters">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Show all:</span>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('listings','show_beds',this.checked)"> <img src="/static/icons/bed.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('listings','show_baths',this.checked)"> <img src="/static/icons/bath.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('listings','show_cars',this.checked)"> <img src="/static/icons/car.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('listings','show_land',this.checked)"> <img src="/static/icons/land.png" style="height:14px;vertical-align:middle"></label>
+      <label class="feat-bulk-lbl"><input type="checkbox" checked onchange="toggleAllFeature('listings','show_build',this.checked)"> <img src="/static/icons/build.png" style="height:14px;vertical-align:middle"></label>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;margin-top:6px">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Sort:</span>
+      <button class="ghost sort-btn" onclick="sortComparables('listings','price_asc')">$ ↑</button>
+      <button class="ghost sort-btn" onclick="sortComparables('listings','price_desc')">$ ↓</button>
+      <button class="ghost sort-btn" onclick="sortComparables('listings','dist_asc')">km ↑</button>
+      <button class="ghost sort-btn" onclick="sortComparables('listings','dist_desc')">km ↓</button>
+    </div>
+    <div id="listings-autofind-filters" class="autofind-filters"></div>
+    </div>
+  </div>
+  <div class="step-body" id="listings-body">
+  <div id="listings-autofind-panel"></div>
+
+  <div id="listings-list"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="add-btn" style="flex:1" onclick="addComparable('listings')">+ From realestate.com.au</button>
+    <button class="add-btn" style="flex:1" onclick="addManualEntry('listings')">+ Manual entry</button>
+  </div>
+  </div>
+</section>
+
+<!-- STEP 6: Agent details -->
+<section class="step" id="step-6">
+  <h2><span class="num">6</span> Report details</h2>
+  <div class="grid2">
+    <div><label>Agent name</label><input type="text" id="agent-name" placeholder="Extracted from PDF"></div>
+    <div><label>Agent email</label><input type="email" id="agent-email" placeholder="Extracted from PDF"></div>
+  </div>
+  <div class="grid2" style="margin-top: 12px;">
+    <div><label>Agency name</label><input type="text" id="agency-name" placeholder="Extracted from PDF"></div>
+    <div><label>Report date</label><input type="text" id="report-date" placeholder="Extracted from PDF"></div>
+  </div>
+  <div style="margin-top: 12px; max-width: 200px;">
+    <label>Map marker size</label>
+    <select id="marker-size">
+      <option value="small">Small</option>
+      <option value="medium" selected>Medium</option>
+      <option value="large">Large</option>
+    </select>
+  </div>
+  <div style="margin-top:16px">
+    <label style="font-weight:600;margin-bottom:8px;display:block">Sections to include in PDF</label>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;margin:0">
+        <input type="checkbox" id="include-overview-map" checked style="width:auto;accent-color:var(--primary)">
+        Comparables Map: Sales &amp; Listings
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;margin:0">
+        <input type="checkbox" id="include-sales-map" checked style="width:auto;accent-color:var(--primary)">
+        Comparables Map: Sales (map + list)
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;margin:0">
+        <input type="checkbox" id="include-listings-map" checked style="width:auto;accent-color:var(--primary)">
+        Comparables Map: Listings (map + list)
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- Generate -->
+<div id="generate-bar">
+  <div style="color: var(--muted); font-size: 13px;">
+    Ready? The PDF will be regenerated with the new cover, maps, and comparable pages.
+  </div>
+  <button id="generate-btn" onclick="generate()" disabled>Generate PDF</button>
+</div>
+
+<div id="progress-box">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+    <span id="progress-step" style="font-size:13px;color:var(--muted)">Starting...</span>
+    <span style="display:flex;gap:10px;align-items:baseline;flex-shrink:0">
+      <span id="progress-eta" style="font-size:12px;color:var(--muted)"></span>
+      <span id="progress-pct" style="font-size:13px;font-weight:600;color:var(--primary)">0%</span>
+    </span>
+  </div>
+  <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+</div>
+<div id="result"></div>
+
+</main>
+
+</div>
+
+<script>
+const state = {
+  session_id: null,
+  logo_path: "",
+  hero_image_path: "",
+  original_pdf_path: "",
+  sales: [],
+  listings: [],
+  autoFindParams: (() => {
+    const shared = { bedsOn: true, bedsMin: null, bedsMax: null, bathsOn: true, bathsMin: null, bathsMax: null, carsOn: true, carsMin: null, carsMax: null, landOn: true, landMin: null, landMax: null, buildOn: true, buildMin: null, buildMax: null, suburbs: [], distanceOn: false, distanceKm: null };
+    return { sales: shared, listings: shared };
+  })(),
+};
+let activeGeocodes = 0;
+
+// Keep server alive while the tab is open; server exits ~30s after last heartbeat.
+setInterval(() => {
+  fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
+}, 5000);
+
+// Save/restore Google Maps API key
+const savedKey = localStorage.getItem("gmaps_key");
+if (savedKey) document.getElementById("gmaps-key").value = savedKey;
+document.getElementById("gmaps-key").addEventListener("change", e => {
+  localStorage.setItem("gmaps_key", e.target.value.trim());
+  const addr = document.getElementById("subject-address").value.trim();
+  const lat  = document.getElementById("subject-lat").value;
+  const lng  = document.getElementById("subject-lng").value;
+  if (addr && (!lat || !lng)) lookupCoordinates();
+  // Geocode any comparables that are missing coordinates
+  if (e.target.value.trim()) {
+    geocodeAll("sales");
+    geocodeAll("listings");
+  }
+});
+
+// Pre-fill suburb filter from address field on blur (fallback when PDF lacks suburb)
+document.getElementById('subject-address').addEventListener('blur', () => {
+  const addr = document.getElementById('subject-address').value.trim();
+  if (!addr) return;
+  const p = state.autoFindParams.sales; // shared object
+  if (p.suburbs.length === 0) {
+    const sub = extractSuburbFromAddress(addr);
+    if (sub) {
+      p.suburbs = [sub];
+      renderAutoFindFilters('sales');
+      renderAutoFindFilters('listings');
+    }
+  }
+});
+
+// Save/restore marker size
+const savedMarkerSize = localStorage.getItem("marker_size");
+if (savedMarkerSize) document.getElementById("marker-size").value = savedMarkerSize;
+document.getElementById("marker-size").addEventListener("change", e => {
+  localStorage.setItem("marker_size", e.target.value);
+});
+
+// ---- Side-nav active section highlight ---------------------------
+(function () {
+  const links = Array.from(document.querySelectorAll("nav.side-nav a[data-nav]"));
+  const sections = links
+    .map(a => document.getElementById(a.dataset.nav))
+    .filter(Boolean);
+
+  // When the user clicks a nav link, we pin the active highlight to
+  // that section for a short window and suppress scroll-driven updates.
+  // Otherwise the page briefly scrolls all the way past short sections
+  // (4 and 5 above a tall 6), the bottom-of-page rule snaps to the last
+  // one, and the click looks like it jumped straight to section 6.
+  let pinnedId = null;
+  let pinUntil = 0;
+
+  function setActive(id) {
+    links.forEach(a => a.classList.toggle("active", a.dataset.nav === id));
+  }
+
+  function updateActive() {
+    if (Date.now() < pinUntil && pinnedId) {
+      setActive(pinnedId);
+      return;
+    }
+    const highlightLine = 100;
+    let activeId = sections[0] ? sections[0].id : null;
+    for (const s of sections) {
+      const top = s.getBoundingClientRect().top;
+      if (top - highlightLine <= 0) activeId = s.id;
+    }
+    setActive(activeId);
+  }
+
+  links.forEach(a => {
+    a.addEventListener("click", e => {
+      const target = document.getElementById(a.dataset.nav);
+      if (!target) return;
+      e.preventDefault();
+      pinnedId = a.dataset.nav;
+      pinUntil = Date.now() + 900;   // smooth-scroll duration + buffer
+      setActive(pinnedId);
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  window.addEventListener("scroll", updateActive, { passive: true });
+  window.addEventListener("resize", updateActive);
+  updateActive();
+})();
+
+// ---- Session / uploads ------------------------------------------
+document.getElementById("pdf-input").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById("session-status");
+  status.textContent = "Uploading and extracting logo...";
+  const fd = new FormData();
+  fd.append("original_pdf", file);
+  try {
+    const r = await fetch("/api/session", { method: "POST", body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    state.session_id = data.session_id;
+    state.logo_path = data.logo_path;
+    state.original_pdf_path = data.original_pdf_path;
+    state.hero_image_path = data.hero_image_path || "";
+    // Show preview of auto-extracted hero image (user can override by choosing a file)
+    if (data.hero_image_token) {
+      const prev = document.getElementById("hero-preview");
+      const note = document.getElementById("hero-source-note");
+      prev.style.backgroundImage = `url('/api/thumb/${data.hero_image_token}')`;
+      prev.classList.remove("hidden");
+      if (note) note.textContent = "Auto-extracted from uploaded PDF. Choose a file above to override.";
+    }
+    // Pre-fill subject property fields from PDF extraction
+    if (data.subject_info) {
+      const si = data.subject_info;
+      if (si.address) {
+        document.getElementById("subject-address").value = si.address;
+        // Auto-detect property type from address (unit prefix → apartment)
+        const inferred = inferPropertyTypeFromAddress(si.address);
+        if (inferred) document.getElementById("subject-property-type").value = inferred;
+      }
+      if (si.bedrooms != null)      document.getElementById("subject-bed").value  = si.bedrooms;
+      if (si.bathrooms != null)     document.getElementById("subject-bath").value = si.bathrooms;
+      if (si.carspaces != null)     document.getElementById("subject-car").value  = si.carspaces;
+      const landEl  = document.getElementById("subject-land");
+      const buildEl = document.getElementById("subject-build");
+      const floorEl = document.getElementById("subject-floor");
+      if (si.land_size_m2  != null && landEl)  landEl.value  = si.land_size_m2;
+      if (si.build_size_m2 != null && buildEl) buildEl.value = si.build_size_m2;
+      if (si.floor_size_m2 != null && floorEl) floorEl.value = si.floor_size_m2;
+      // Initialise auto-find filter params from subject info
+      initAutoFindParamsFromSubjectInfo(si);
+    }
+    // Pre-populate comparable rows from PDF extraction
+    if (data.comparables_info) {
+      state.sales    = [];
+      state.listings = [];
+      for (const comp of (data.comparables_info.sales    || [])) addComparableFromPDF("sales",    comp);
+      for (const comp of (data.comparables_info.listings || [])) addComparableFromPDF("listings", comp);
+      // Auto-geocode all extracted comparables if API key is already entered
+      const gKey = document.getElementById("gmaps-key").value.trim();
+      if (gKey) {
+        geocodeAll("sales");
+        geocodeAll("listings");
+      }
+    }
+    // Pre-fill agent/report details from PDF extraction
+    if (data.agent_info) {
+      const ai = data.agent_info;
+      if (ai.agent_name)  document.getElementById("agent-name").value  = ai.agent_name;
+      if (ai.agency_name) document.getElementById("agency-name").value = ai.agency_name;
+      if (ai.agent_email) document.getElementById("agent-email").value = ai.agent_email;
+      if (ai.report_date) document.getElementById("report-date").value = ai.report_date;
+    }
+    status.textContent = "✓ Original PDF ready. Session: " + data.session_id.slice(0, 8);
+    status.style.color = "var(--success)";
+    updateGenerateButton();
+    // Auto-geocode subject if address extracted and API key is available
+    if (data.subject_info && data.subject_info.address) {
+      const apiKey = document.getElementById("gmaps-key").value.trim();
+      if (apiKey) lookupCoordinates();
+    }
+  } catch (err) {
+    status.textContent = "Upload failed: " + err.message;
+    status.style.color = "var(--danger)";
+  }
+});
+
+document.getElementById("hero-input").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file || !state.session_id) {
+    const note = document.getElementById("hero-source-note");
+    if (note) {
+      note.textContent = "Please upload the original PDF first (step 1).";
+      note.style.color = "var(--danger)";
+    }
+    return;
+  }
+  const fd = new FormData();
+  fd.append("session_id", state.session_id);
+  fd.append("hero_image", file);
+  const r = await fetch("/api/upload-hero", { method: "POST", body: fd });
+  const data = await r.json();
+  state.hero_image_path = data.hero_image_path;
+  // Update preview with a local data URL of the chosen file
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const prev = document.getElementById("hero-preview");
+    const note = document.getElementById("hero-source-note");
+    prev.style.backgroundImage = `url('${ev.target.result}')`;
+    prev.classList.remove("hidden");
+    if (note) note.textContent = "Your uploaded image.";
+  };
+  reader.readAsDataURL(file);
+});
+
+// ---- Comparable rows ----------------------------------------------
+function addComparable(kind) {
+  const list = state[kind];
+  list.push({
+    url: "", address: "", fetch_status: "idle", status: "",
+    latitude: null, longitude: null, bedrooms: null, bathrooms: null,
+    carspaces: null, land_size_m2: null, land_size_display: "",
+    price_display: "", sold_date: "", listing_date: "", first_listing: "", last_listing: "",
+    year_built: "", days_on_market: "",
+    thumbnail_path: "", thumbnail_url: "", headline: "",
+    from_rea: true, manual: false,
+    property_type: currentSubjectType(), build_size_m2: null, floor_size_m2: null,
+  });
+  renderList(kind);
+}
+
+function addManualEntry(kind) {
+  const list = state[kind];
+  list.push({
+    url: "", address: "", fetch_status: "success",
+    status: kind === "sales" ? "Sold" : "For Sale",
+    latitude: null, longitude: null, bedrooms: null, bathrooms: null,
+    carspaces: null, land_size_m2: null, land_size_display: "",
+    price_display: "", sold_date: "", listing_date: "", first_listing: "", last_listing: "",
+    year_built: "", days_on_market: "",
+    thumbnail_path: "", thumbnail_url: "", headline: "",
+    from_rea: false, manual: true,
+    property_type: currentSubjectType(), build_size_m2: null, floor_size_m2: null,
+  });
+  renderList(kind);
+}
+
+function removeComparable(kind, i) {
+  state[kind][i]._deleted = true;
+  renderList(kind);
+}
+
+function undoDelete(kind, i) {
+  state[kind][i]._deleted = false;
+  renderList(kind);
+}
+
+function renderList(kind) {
+  _renderListImpl(kind);
+  // Listings offsets depend on active-sales count.
+  // Re-render the other list whenever sales changes so numbers stay in sync.
+  if (kind === "sales") _renderListImpl("listings");
+}
+
+function _renderListImpl(kind) {
+  const list = state[kind];
+  const container = document.getElementById(kind + "-list");
+  if (!container) return;
+  container.innerHTML = "";
+  const countEl = document.getElementById(kind + "-count");
+  if (countEl) countEl.textContent = list.filter(x => !x._deleted).length;
+
+  // Sales and listings share a continuous sequence: listings start after all active sales.
+  const salesOffset = kind === "listings" ? state.sales.filter(s => !s._deleted).length : 0;
+  let visibleIdx = 0;
+
+  list.forEach((item, i) => {
+    const row = document.createElement("div");
+
+    if (item._deleted) {
+      row.style.cssText = "border:1.5px dashed var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;";
+      row.innerHTML = `<span style="flex:1">Deleted: ${escapeHtml(item.address || "Comparable")}</span>
+        <button class="ghost" style="font-size:12px;padding:4px 10px;" onclick="undoDelete('${kind}',${i})">Restore</button>`;
+      container.appendChild(row);
+      return;
+    }
+
+    visibleIdx++;
+    row.className = "comp-row " + (kind === "sales" ? "sold" : "listing");
+    row.setAttribute('draggable', 'true');
+    row.dataset.kind = kind;
+    row.dataset.index = String(i);
+    row.addEventListener('dragstart', compDragStart);
+    row.addEventListener('dragover',  compDragOver);
+    row.addEventListener('dragleave', compDragLeave);
+    row.addEventListener('drop',      compDrop);
+    row.addEventListener('dragend',   compDragEnd);
+    const idx = salesOffset + visibleIdx;
+    const showForm = item.manual || item.fetch_status === "success";
+
+    if (showForm) {
+      const dateField = kind === "sales" ? "sold_date" : "listing_date";
+      const dateLabel = kind === "sales" ? "Sold Date" : "Listing Date";
+      const priceLabel = kind === "sales" ? "Sold Price" : "Listing Price";
+      const statusBadge = item.manual
+        ? `<span class="status success">Manual ✓</span>`
+        : `<span class="status success">Fetched ✓</span>`;
+      const featFields = `
+        <div class="grid3" style="margin-bottom:8px">
+          <div>
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer">
+              <input type="checkbox" ${item.show_beds!==false?'checked':''} onchange="updateField('${kind}',${i},'show_beds',this.checked)" style="margin:0;width:auto">
+              <img src="/static/icons/bed.png" style="height:16px">
+            </label>
+            <input type="number" min="0" value="${item.bedrooms??''}" oninput="updateField('${kind}',${i},'bedrooms',this.value?parseInt(this.value):null)">
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer">
+              <input type="checkbox" ${item.show_baths!==false?'checked':''} onchange="updateField('${kind}',${i},'show_baths',this.checked)" style="margin:0;width:auto">
+              <img src="/static/icons/bath.png" style="height:16px">
+            </label>
+            <input type="number" min="0" value="${item.bathrooms??''}" oninput="updateField('${kind}',${i},'bathrooms',this.value?parseInt(this.value):null)">
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer">
+              <input type="checkbox" ${item.show_cars!==false?'checked':''} onchange="updateField('${kind}',${i},'show_cars',this.checked)" style="margin:0;width:auto">
+              <img src="/static/icons/car.png" style="height:16px">
+            </label>
+            <input type="number" min="0" value="${item.carspaces??''}" oninput="updateField('${kind}',${i},'carspaces',this.value?parseInt(this.value):null)">
+          </div>
+        </div>
+        <div class="grid2" style="margin-bottom:8px">
+          <div>
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer">
+              <input type="checkbox" ${item.show_land!==false?'checked':''} onchange="updateField('${kind}',${i},'show_land',this.checked)" style="margin:0;width:auto">
+              <img src="/static/icons/land.png" style="height:16px">
+            </label>
+            <input type="number" min="0" value="${item.land_size_m2??''}" oninput="updateField('${kind}',${i},'land_size_m2',this.value?parseFloat(this.value):null)">
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer">
+              <input type="checkbox" ${item.show_build!==false?'checked':''} onchange="updateField('${kind}',${i},'show_build',this.checked)" style="margin:0;width:auto">
+              <img src="/static/icons/build.png" style="height:16px">
+            </label>
+            <input type="number" min="0" value="${item.build_size_m2??''}" oninput="updateField('${kind}',${i},'build_size_m2',this.value?parseFloat(this.value):null)">
+          </div>
+        </div>`;
+
+      row.innerHTML = `
+        <button class="close" onclick="removeComparable('${kind}', ${i})">\xd7</button>
+        <h4><span class="drag-handle">⠿</span><span class="badge">${idx}</span> ${item.address || (item.manual ? "Manual Entry " : "Comparable ") + idx} ${statusBadge}</h4>
+        ${!item.manual ? `<div class="scrape-row">
+          <input type="url" placeholder="https://www.realestate.com.au/property-..." value="${escapeHtml(item.url)}"
+                 onchange="updateField('${kind}', ${i}, 'url', this.value)">
+          <button onclick="scrapeComparable('${kind}', ${i})">Re-fetch</button>
+        </div>` : ""}
+        <div style="margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;">
+          ${item.thumb_token ? `<span class="thumb" style="background-image: url('/api/thumb/${item.thumb_token}');flex-shrink:0;"></span>` : ""}
+          <div>
+            ${item.images && item.images.length > 1 ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${item.images.map(img => `<span onclick="selectCompThumb('${kind}',${i},'${img.thumb_token}','${escapeHtml(img.thumbnail_path)}')" style="width:44px;height:44px;display:inline-block;background:url('/api/thumb/${img.thumb_token}') center/cover no-repeat;border-radius:4px;cursor:pointer;border:2px solid ${img.thumb_token === item.thumb_token ? 'var(--primary)' : 'transparent'};"></span>`).join("")}</div>` : ""}
+            <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--primary);padding:3px 0;">
+              <input type="file" accept="image/*" style="display:none" onchange="uploadCompThumb('${kind}',${i},this)">
+              ${item.thumb_token ? "Replace photo" : "Upload photo"}
+            </label>
+          </div>
+        </div>
+        <div class="grid2" style="margin-bottom:8px">
+          <div><label style="font-size:12px;font-weight:500">Address</label>
+            <input type="text" value="${escapeHtml(item.address)}" placeholder="13 Example Street, Suburb NSW 2000"
+              oninput="updateField('${kind}',${i},'address',this.value)">
+          </div>
+          <div><label style="font-size:12px;font-weight:500">${priceLabel}</label>
+            <input type="text" value="${escapeHtml(item.price_display)}" placeholder="$1,200,000"
+              oninput="updateField('${kind}',${i},'price_display',this.value)">
+          </div>
+        </div>
+        ${featFields}
+        <div class="grid3" style="margin-bottom:8px">
+          <div><label style="font-size:12px;font-weight:500">${dateLabel}</label>
+            <input type="text" value="${escapeHtml(item[dateField])}" placeholder="YYYY-MM-DD"
+              oninput="updateField('${kind}',${i},'${dateField}',this.value)">
+          </div>
+          <div><label style="font-size:12px;font-weight:500">Latitude</label>
+            <input type="number" step="0.000001" value="${item.latitude ?? ''}" placeholder="-33.68"
+              oninput="updateField('${kind}',${i},'latitude',this.value?parseFloat(this.value):null)">
+          </div>
+          <div><label style="font-size:12px;font-weight:500">Longitude</label>
+            <input type="number" step="0.000001" value="${item.longitude ?? ''}" placeholder="150.86"
+              oninput="updateField('${kind}',${i},'longitude',this.value?parseFloat(this.value):null)">
+          </div>
+        </div>
+        ${item._geocode_status === "loading" ?
+          `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Geocoding coordinates…</div>` :
+          item._geocode_status === "ok" ?
+          `<div style="font-size:12px;color:var(--success);margin-bottom:6px;">✓ Coordinates filled</div>` :
+          item._geocode_status === "error" ?
+          `<div style="font-size:12px;color:var(--danger);margin-bottom:6px;">Geocoding failed — check address or API key</div>` : ""}
+      `;
+    } else {
+      const statusClass = {
+        "idle": "idle", "loading": "loading", "error": "error",
+      }[item.fetch_status || "idle"];
+      const statusText = {
+        "idle": "Not fetched", "loading": "Fetching...", "error": "Failed",
+      }[item.fetch_status || "idle"];
+      row.innerHTML = `
+        <button class="close" onclick="removeComparable('${kind}', ${i})">\xd7</button>
+        <h4>
+          <span class="drag-handle">⠿</span><span class="badge">${idx}</span>
+          ${item.address || "Comparable " + idx}
+          <span class="status ${statusClass}">${statusText}</span>
+        </h4>
+        <div class="scrape-row">
+          <input type="url" placeholder="https://www.realestate.com.au/property-..." value="${escapeHtml(item.url)}"
+                 onchange="updateField('${kind}', ${i}, 'url', this.value)">
+          <button onclick="scrapeComparable('${kind}', ${i})">Fetch</button>
+        </div>
+      `;
+    }
+    container.appendChild(row);
+  });
+  updateGenerateButton();
+}
+
+function updateField(kind, i, field, value) {
+  state[kind][i][field] = value;
+}
+
+function toggleStepBody(kind) {
+  const filters = document.getElementById(kind + '-filters');
+  const h2      = document.getElementById(kind + '-h2');
+  const collapsed = filters.classList.toggle('collapsed');
+  h2.classList.toggle('collapsed', collapsed);
+}
+
+function toggleAllFeature(kind, field, checked) {
+  state[kind].filter(s => !s._deleted).forEach(s => { s[field] = checked; });
+  renderList(kind);
+}
+
+function updateFieldAndRender(kind, i, field, value) {
+  state[kind][i][field] = value;
+  renderList(kind);
+}
+
+function escapeHtml(s) {
+  if (!s) return "";
+  return s.replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+async function scrapeComparable(kind, i) {
+  const item = state[kind][i];
+  if (!item.url) {
+    item.fetch_status = "error";
+    item.fetch_error = "Paste a realestate.com.au URL first";
+    renderList(kind);
+    showToast(kind, "error", `Row ${i + 1}: paste a URL first`);
+    hideToast(kind, 2500);
+    return;
+  }
+  item.fetch_status = "loading";
+  item.fetch_error = "";
+  renderList(kind);
+
+  try {
+    const r = await fetch("/api/scrape", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: item.url }),
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(errText);
+    }
+    const { data } = await r.json();
+    Object.assign(item, data, { fetch_status: "success", from_rea: true, fetch_error: "" });
+    if (item.latitude && item.longitude) {
+      item._geocode_status = "ok";
+    } else {
+      geocodeSingle(kind, i);
+    }
+  } catch (err) {
+    item.fetch_status = "error";
+    item.fetch_error = err.message;
+    showToast(kind, "error", `Row ${i + 1} failed: ${err.message.slice(0, 80)}`);
+    hideToast(kind, 4000);
+  }
+  renderList(kind);
+}
+
+function currentSubjectType() {
+  return document.getElementById("subject-property-type").value || "house";
+}
+function onSubjectPropertyTypeChange() {
+  // Re-render comparables so new rows inherit the current type
+  renderList("sales");
+  renderList("listings");
+  renderAutoFindFilters("sales");
+  renderAutoFindFilters("listings");
+}
+function updateSubjectSizeFields() {}
+
+function inferPropertyTypeFromAddress(address) {
+  // Unit prefix like "5/12 George St" or "802/2-4 Cambridge St" → apartment
+  if (/^\d+[A-Za-z]?\//.test((address || "").trim())) return "apartment";
+  return null;
+}
+
+function updateGenerateButton() {
+  const btn = document.getElementById("generate-btn");
+  const hasSession = !!state.session_id;
+  const hasKey = !!document.getElementById("gmaps-key").value.trim();
+  const hasAddress = !!document.getElementById("subject-address").value.trim();
+  const allComparablesFetched = [...state.sales, ...state.listings]
+      .every(c => c.fetch_status === "success");
+  const hasAnyComparable = state.sales.length + state.listings.length > 0;
+
+  btn.disabled = !(hasSession && hasKey && hasAddress && allComparablesFetched && hasAnyComparable && activeGeocodes === 0);
+}
+
+["gmaps-key", "subject-address"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updateGenerateButton);
+});
+
+// ---- Geocoding -------------------------------------------------------
+async function lookupCoordinates() {
+  const address = document.getElementById("subject-address").value.trim();
+  const apiKey = document.getElementById("gmaps-key").value.trim();
+  const statusEl = document.getElementById("geocode-status");
+  if (!address) {
+    statusEl.textContent = "Enter a property address first.";
+    statusEl.style.color = "var(--danger)";
+    return;
+  }
+  if (!apiKey) {
+    statusEl.textContent = "Enter your Google Maps API key (Step 2) first.";
+    statusEl.style.color = "var(--danger)";
+    return;
+  }
+  statusEl.textContent = "Geocoding…";
+  statusEl.style.color = "var(--muted)";
+  activeGeocodes++;
+  updateGenerateButton();
+  try {
+    const r = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${encodeURIComponent(apiKey)}`
+    );
+    const data = await r.json();
+    if (data.status !== "OK") throw new Error(data.status);
+    const loc = data.results[0].geometry.location;
+    document.getElementById("subject-lat").value = loc.lat.toFixed(6);
+    document.getElementById("subject-lng").value = loc.lng.toFixed(6);
+    statusEl.textContent = "✓ Coordinates filled";
+    statusEl.style.color = "var(--success)";
+  } catch (err) {
+    statusEl.textContent = "Failed: " + err.message;
+    statusEl.style.color = "var(--danger)";
+  } finally {
+    activeGeocodes--;
+    updateGenerateButton();
+  }
+}
+
+// ---- PDF-extracted comparable rows ----------------------------------
+function addComparableFromPDF(kind, data) {
+  state[kind].push({
+    url: "", thumbnail_path: "", thumbnail_url: "", headline: "",
+    fetch_status: "success", manual: false, from_rea: false,
+    property_type: currentSubjectType(), build_size_m2: null, build_size_display: "",
+    floor_size_m2: null, floor_size_display: "",
+    ...data,
+  });
+  renderList(kind);
+}
+
+// ---- Toast helper ---------------------------------------------------
+function showToast(kind, state, message) {
+  const el = document.getElementById(kind + "-toast");
+  if (!el) return;
+  el.className = "toast " + state;
+  el.innerHTML = (state === "loading" ? '<span class="spinner"></span>' : "") + escapeHtml(message);
+}
+function hideToast(kind, after = 2500) {
+  const el = document.getElementById(kind + "-toast");
+  if (!el) return;
+  setTimeout(() => el.classList.add("hidden"), after);
+}
+
+// ---- Bulk fetch REA -------------------------------------------------
+async function fetchAll(kind) {
+  const targets = state[kind].map((c, i) => i).filter(i => state[kind][i].url);
+  if (!targets.length) {
+    showToast(kind, "error", "No REA URLs found. Paste a URL on each row first.");
+    hideToast(kind, 3500);
+    return;
+  }
+  showToast(kind, "loading", `Fetching ${targets.length} REA listing${targets.length > 1 ? "s" : ""}...`);
+  let ok = 0, fail = 0;
+  for (const i of targets) {
+    const before = state[kind][i].fetch_status;
+    await scrapeComparable(kind, i);
+    if (state[kind][i].fetch_status === "success") ok++; else fail++;
+    showToast(kind, "loading", `Fetching ${ok + fail} / ${targets.length}...`);
+  }
+  if (fail === 0) {
+    showToast(kind, "success", `✓ Fetched ${ok} listing${ok !== 1 ? "s" : ""}`);
+  } else {
+    showToast(kind, "error", `${ok} ok, ${fail} failed — see row status for details`);
+  }
+  hideToast(kind);
+  await geocodeAll(kind);
+}
+
+// ---- Comparable photo picker ----------------------------------------
+function selectCompThumb(kind, i, thumbToken, thumbPath) {
+  state[kind][i].thumb_token = thumbToken;
+  state[kind][i].thumbnail_path = thumbPath;
+  renderList(kind);
+}
+
+async function uploadCompThumb(kind, i, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append("session_id", state.session_id);
+  formData.append("image", file);
+  try {
+    const r = await fetch("/api/upload-comparable-thumb", { method: "POST", body: formData });
+    if (!r.ok) throw new Error(await r.text());
+    const { thumb_token, thumbnail_path } = await r.json();
+    if (!state[kind][i].images) state[kind][i].images = [];
+    state[kind][i].images.unshift({ thumb_token, thumbnail_path });
+    state[kind][i].thumb_token = thumb_token;
+    state[kind][i].thumbnail_path = thumbnail_path;
+    renderList(kind);
+  } catch (err) {
+    alert("Upload failed: " + err.message);
+  }
+}
+
+// ---- Per-item silent geocode ----------------------------------------
+async function geocodeSingle(kind, i) {
+  const apiKey = document.getElementById("gmaps-key").value.trim();
+  if (!apiKey) return;
+  const item = state[kind][i];
+  if (!item || !item.address || item.latitude) return;
+  item._geocode_status = "loading";
+  activeGeocodes++;
+  updateGenerateButton();
+  renderList(kind);
+  try {
+    const r = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(item.address)}&key=${encodeURIComponent(apiKey)}`
+    );
+    const data = await r.json();
+    if (data.status !== "OK") throw new Error(data.status);
+    const loc = data.results[0].geometry.location;
+    state[kind][i].latitude  = loc.lat;
+    state[kind][i].longitude = loc.lng;
+    state[kind][i]._geocode_status = "ok";
+  } catch {
+    state[kind][i]._geocode_status = "error";
+  } finally {
+    activeGeocodes--;
+    updateGenerateButton();
+    renderList(kind);
+  }
+}
+
+// ---- Bulk geocode via Google Maps -----------------------------------
+async function geocodeAll(kind) {
+  const apiKey = document.getElementById("gmaps-key").value.trim();
+  if (!apiKey) {
+    showToast(kind, "error", "Enter your Google Maps API key in Step 2 first.");
+    hideToast(kind, 3500);
+    return;
+  }
+  const toGeocode = state[kind]
+    .map((c, i) => ({ i, address: c.address }))
+    .filter(({ i, address }) => address && !state[kind][i].latitude && !state[kind][i]._deleted);
+
+  if (!toGeocode.length) {
+    showToast(kind, "success", "All comparables already have coordinates.");
+    hideToast(kind, 2500);
+    return;
+  }
+
+  showToast(kind, "loading", `Geocoding ${toGeocode.length} address${toGeocode.length > 1 ? "es" : ""}...`);
+  await Promise.all(toGeocode.map(({ i }) => geocodeSingle(kind, i)));
+  const ok = toGeocode.filter(({ i }) => state[kind][i]._geocode_status === "ok").length;
+  const fail = toGeocode.filter(({ i }) => state[kind][i]._geocode_status === "error").length;
+  if (fail === 0) {
+    showToast(kind, "success", `✓ Geocoded ${ok} address${ok !== 1 ? "es" : ""}`);
+  } else {
+    showToast(kind, "error", `${ok} ok, ${fail} failed (check address format or API key)`);
+  }
+  hideToast(kind, 3500);
+}
+
+// ---- Sort comparables -----------------------------------------------
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function parsePrice(str) {
+  if (!str) return null;
+  const n = parseFloat(str.replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function sortComparables(kind, mode) {
+  const subLat = parseFloat(document.getElementById('subject-lat').value);
+  const subLng = parseFloat(document.getElementById('subject-lng').value);
+  state[kind].sort((a, b) => {
+    if (a._deleted && !b._deleted) return 1;
+    if (!a._deleted && b._deleted) return -1;
+    if (a._deleted && b._deleted) return 0;
+    if (mode === 'price_asc' || mode === 'price_desc') {
+      const pa = parsePrice(a.price_display), pb = parsePrice(b.price_display);
+      if (pa == null && pb == null) return 0;
+      if (pa == null) return 1;
+      if (pb == null) return -1;
+      return mode === 'price_asc' ? pa - pb : pb - pa;
+    }
+    if (mode === 'dist_asc' || mode === 'dist_desc') {
+      const da = (a.latitude && a.longitude && !isNaN(subLat) && !isNaN(subLng))
+        ? haversineKm(subLat, subLng, a.latitude, a.longitude) : Infinity;
+      const db = (b.latitude && b.longitude && !isNaN(subLat) && !isNaN(subLng))
+        ? haversineKm(subLat, subLng, b.latitude, b.longitude) : Infinity;
+      return mode === 'dist_asc' ? da - db : db - da;
+    }
+    return 0;
+  });
+  renderList(kind);
+}
+
+// ---- Drag-to-reorder comparables ------------------------------------
+let _dragKind = null, _dragSrcIdx = null;
+
+function compDragStart(e) {
+  _dragKind   = this.dataset.kind;
+  _dragSrcIdx = parseInt(this.dataset.index);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function compDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('drag-over');
+}
+function compDragLeave() { this.classList.remove('drag-over'); }
+function compDragEnd() {
+  _dragKind = null; _dragSrcIdx = null;
+  document.querySelectorAll('.comp-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+}
+function compDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  const destIdx = parseInt(this.dataset.index);
+  if (_dragKind !== this.dataset.kind || _dragSrcIdx === destIdx || _dragSrcIdx == null) return;
+  const list = state[_dragKind];
+  const [moved] = list.splice(_dragSrcIdx, 1);
+  list.splice(destIdx, 0, moved);
+  renderList(_dragKind);
+}
+
+
+// ---- Auto-find filter panel -----------------------------------------
+function renderAutoFindFilters(kind) {
+  const el = document.getElementById(kind + '-autofind-filters');
+  if (!el) return;
+  const pt = currentSubjectType();
+  const p = state.autoFindParams[kind];
+
+  const isApt   = pt === 'apartment';
+  const isHouse = pt === 'house';
+  const isLand  = pt === 'land';
+
+  const numVal = v => (v !== null && v !== undefined) ? v : '';
+  const chk    = flag => flag ? 'checked' : '';
+  const dis    = flag => flag ? '' : 'disabled style="opacity:0.4"';
+
+  // Helper: checkbox + icon + min–max range inputs
+  const fieldRange = (flagKey, icon, minKey, maxKey) => `
+    <input type="checkbox" ${chk(p[flagKey])} style="width:auto;margin:0"
+      onchange="toggleAFFilter('${kind}','${flagKey}',this.checked)">
+    <label style="margin:0 4px 0 2px"><img src="/static/icons/${icon}.png" style="height:13px;vertical-align:middle"></label>
+    <input type="number" min="0" max="9999" value="${numVal(p[minKey])}" placeholder="min" ${dis(p[flagKey])}
+      onchange="updateAFParam('${kind}','${minKey}',this.value)" style="width:44px">
+    <span style="color:var(--muted);font-size:11px;margin:0 2px">–</span>
+    <input type="number" min="0" max="9999" value="${numVal(p[maxKey])}" placeholder="max" ${dis(p[flagKey])}
+      onchange="updateAFParam('${kind}','${maxKey}',this.value)" style="width:44px">`;
+
+  // Beds / Baths / Cars rows (apartment + house & land)
+  const bedsRow = (isApt || isHouse) ? `
+    <div class="af-row">${fieldRange('bedsOn','bed','bedsMin','bedsMax')}</div>
+    <div class="af-row">${fieldRange('bathsOn','bath','bathsMin','bathsMax')}</div>
+    <div class="af-row">${fieldRange('carsOn','car','carsMin','carsMax')}</div>` : '';
+
+  // Land size row (house & land + land only)
+  const landRow = (isHouse || isLand) ? `
+    <div class="af-row">
+      <input type="checkbox" ${chk(p.landOn)} style="width:auto;margin:0"
+        onchange="toggleAFFilter('${kind}','landOn',this.checked)">
+      <label style="margin:0 2px"><img src="/static/icons/land.png" style="height:13px;vertical-align:middle"> Land m²</label>
+      <input type="number" min="0" value="${numVal(p.landMin)}" placeholder="min" ${dis(p.landOn)}
+        onchange="updateAFParam('${kind}','landMin',this.value)">
+      <span style="color:var(--muted);font-size:11px">–</span>
+      <input type="number" min="0" value="${numVal(p.landMax)}" placeholder="max" ${dis(p.landOn)}
+        onchange="updateAFParam('${kind}','landMax',this.value)">
+    </div>` : '';
+
+  // Build size row (house & land only)
+  const buildRow = isHouse ? `
+    <div class="af-row">
+      <input type="checkbox" ${chk(p.buildOn)} style="width:auto;margin:0"
+        onchange="toggleAFFilter('${kind}','buildOn',this.checked)">
+      <label style="margin:0 2px"><img src="/static/icons/build.png" style="height:13px;vertical-align:middle"> Build m²</label>
+      <input type="number" min="0" value="${numVal(p.buildMin)}" placeholder="min" ${dis(p.buildOn)}
+        onchange="updateAFParam('${kind}','buildMin',this.value)">
+      <span style="color:var(--muted);font-size:11px">–</span>
+      <input type="number" min="0" value="${numVal(p.buildMax)}" placeholder="max" ${dis(p.buildOn)}
+        onchange="updateAFParam('${kind}','buildMax',this.value)">
+    </div>` : '';
+
+  // Suburb tags (always active — being in the list means it's searched)
+  const tags = p.suburbs.map((s, i) => `
+    <span class="af-suburb-tag">${escapeHtml(s)}<button class="af-rm" onclick="removeAFSuburb('${kind}',${i})" title="Remove">×</button></span>`).join('');
+
+  el.innerHTML = `
+    <span style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px;">Auto-find filters</span>
+    ${bedsRow}${landRow}${buildRow}
+    <div class="af-row">
+      <label>Suburbs:</label>
+      <div class="af-suburb-tags">${tags}<input type="text" class="af-suburb-add" id="${kind}-suburb-add" placeholder="+ add suburb"
+        onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAFSuburb('${kind}',this.value);this.value=''}"></div>
+    </div>
+    <div class="af-row">
+      <input type="checkbox" ${chk(p.distanceOn)} style="width:auto;margin:0"
+        onchange="toggleAFFilter('${kind}','distanceOn',this.checked)">
+      <label style="margin:0 2px">Distance:</label>
+      <input type="number" min="1" max="200" value="${numVal(p.distanceKm)}" placeholder="km" ${dis(p.distanceOn)}
+        onchange="updateAFParam('${kind}','distanceKm',this.value)" style="width:60px">
+      <span style="color:var(--muted);font-size:11px">km radius</span>
+    </div>`;
+}
+
+function updateAFParam(kind, key, value) {
+  const p = state.autoFindParams[kind];
+  p[key] = (value === '' || value == null) ? null : Number(value);
+  renderAutoFindFilters('sales');
+  renderAutoFindFilters('listings');
+}
+
+function toggleAFFilter(kind, flagKey, checked) {
+  state.autoFindParams[kind][flagKey] = checked;
+  renderAutoFindFilters('sales');
+  renderAutoFindFilters('listings');
+}
+
+function addAFSuburb(kind, value) {
+  const val = value.trim().replace(/,+$/, '');
+  if (!val) return;
+  const p = state.autoFindParams[kind];
+  if (!p.suburbs.map(s => s.toLowerCase()).includes(val.toLowerCase())) {
+    p.suburbs.push(val);
+  }
+  renderAutoFindFilters('sales');
+  renderAutoFindFilters('listings');
+  setTimeout(() => { const inp = document.getElementById(kind + '-suburb-add'); if (inp) inp.focus(); }, 0);
+}
+
+function removeAFSuburb(kind, index) {
+  state.autoFindParams[kind].suburbs.splice(index, 1);
+  renderAutoFindFilters('sales');
+  renderAutoFindFilters('listings');
+}
+
+function extractSuburbFromAddress(addr) {
+  // Find the STATE [POSTCODE] at or near the end of the address
+  const stateMatch = addr.match(/\b(NSW|VIC|QLD|SA|WA|TAS|ACT|NT)\b[\s\d]*$/i);
+  if (!stateMatch) return null;
+
+  const before = addr.slice(0, stateMatch.index).trim().replace(/,\s*$/, '');
+
+  // Comma-separated format: "42 Main St, North Kellyville NSW 2155" → last part
+  const commaIdx = before.lastIndexOf(',');
+  if (commaIdx !== -1) return before.slice(commaIdx + 1).trim();
+
+  // No comma: scan words backwards to find the last street-type word,
+  // then take everything after it as the suburb (mirrors Python _parse_au_address).
+  const STREET_TYPES = new Set([
+    'street','st','road','rd','avenue','ave','drive','dr','court','ct','crt',
+    'place','pl','crescent','cres','crs','boulevard','blvd','lane','ln',
+    'way','close','cl','terrace','tce','parade','pde','grove','gr',
+    'highway','hwy','circuit','cct','loop','rise','row','walk','mews','quay',
+    'esplanade','track','path','pass','square','sq',
+  ]);
+  const words = before.split(/\s+/);
+  let cut = words.length;
+  for (let j = words.length - 1; j >= 0; j--) {
+    if (STREET_TYPES.has(words[j].toLowerCase().replace(/\.$/, ''))) {
+      cut = j + 1;
+      break;
+    }
+  }
+  const suburb = words.slice(cut).join(' ');
+  return suburb || (words.length ? words[words.length - 1] : null);
+}
+
+function initAutoFindParamsFromSubjectInfo(si) {
+  // Both keys reference the same shared object; only update it once.
+  const p = state.autoFindParams.sales;
+  if (si.bedrooms  != null) { p.bedsMin  = si.bedrooms;  p.bedsMax  = si.bedrooms;  p.bedsOn  = true; }
+  if (si.bathrooms != null) { p.bathsMin = si.bathrooms; p.bathsMax = si.bathrooms; p.bathsOn = true; }
+  if (si.carspaces != null) { p.carsMin  = si.carspaces; p.carsMax  = si.carspaces; p.carsOn  = true; }
+  if (si.land_size_m2 != null) {
+    p.landMin = Math.max(0, Math.round(si.land_size_m2 - 100));
+    p.landMax = Math.round(si.land_size_m2 + 100);
+    p.landOn  = true;
+  }
+  const buildM2 = si.build_size_m2 ?? si.floor_size_m2 ?? null;
+  if (buildM2 != null) {
+    p.buildMin = Math.max(0, Math.round(buildM2 - 100));
+    p.buildMax = Math.round(buildM2 + 100);
+    p.buildOn  = true;
+  }
+  if (si.suburb) {
+    p.suburbs = [si.suburb];
+  } else if (si.address) {
+    const sub = extractSuburbFromAddress(si.address);
+    if (sub) p.suburbs = [sub];
+  }
+  renderAutoFindFilters('sales');
+  renderAutoFindFilters('listings');
+}
+
+// ---- Auto-find comparables ------------------------------------------
+async function autoFind(kind, forceSuburb) {
+  if (!state.session_id) {
+    showToast(kind, "error", "Upload a PDF first (Step 1).");
+    hideToast(kind, 3000);
+    return;
+  }
+  const listingType = kind === "sales" ? "sold" : "buy";
+  const panel = document.getElementById(kind + "-autofind-panel");
+  panel.innerHTML = "";
+
+  showToast(kind, "loading", forceSuburb ? "Searching suburb-wide…" : "Searching REA for comparables…");
+
+  const pt = currentSubjectType();
+  const ptIsApt   = pt === 'apartment';
+  const ptIsHouse = pt === 'house';
+  const ptIsLand  = pt === 'land';
+  const p = state.autoFindParams[kind];
+
+  const ctrl = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, 120000);
+  try {
+    const r = await fetch("/api/auto-find-comparables", {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: state.session_id,
+        listing_type: listingType,
+        property_type: pt,
+        force_suburb: !!forceSuburb,
+        // Beds/baths/cars ranges: apartment + house only (not land-only)
+        beds_min:  (ptIsApt || ptIsHouse) && p.bedsOn  ? p.bedsMin  : null,
+        beds_max:  (ptIsApt || ptIsHouse) && p.bedsOn  ? p.bedsMax  : null,
+        baths_min: (ptIsApt || ptIsHouse) && p.bathsOn ? p.bathsMin : null,
+        baths_max: (ptIsApt || ptIsHouse) && p.bathsOn ? p.bathsMax : null,
+        cars_min:  (ptIsApt || ptIsHouse) && p.carsOn  ? p.carsMin  : null,
+        cars_max:  (ptIsApt || ptIsHouse) && p.carsOn  ? p.carsMax  : null,
+        // Land size: house & land + land-only (not apartment)
+        land_size_min:  (ptIsHouse || ptIsLand) && p.landOn ? p.landMin  : null,
+        land_size_max:  (ptIsHouse || ptIsLand) && p.landOn ? p.landMax  : null,
+        // Build size: house & land only
+        build_size_min: ptIsHouse && p.buildOn ? p.buildMin : null,
+        build_size_max: ptIsHouse && p.buildOn ? p.buildMax : null,
+        extra_suburbs:  p.suburbs.filter(s => s.trim()),
+        distance_km:    p.distanceOn ? p.distanceKm : null,
+      }),
+    });
+    clearTimeout(timer);
+    if (!r.ok) {
+      const msg = await r.text();
+      throw new Error(msg);
+    }
+    const data = await r.json();
+    const urls = data.urls || [];
+    const needsFallback = data.needs_fallback || false;
+    const fallbackDesc = data.fallback_description || "";
+
+    if (!urls.length && !needsFallback) {
+      showToast(kind, "error", "No comparables found — check subject property details in Step 3.");
+      hideToast(kind, 5000);
+      return;
+    }
+
+    if (needsFallback && !urls.length) {
+      showToast(kind, "error", "No results in building. Expand to suburb?");
+      hideToast(kind, 500);
+    } else {
+      showToast(kind, "success", `Found ${urls.length} comparable${urls.length !== 1 ? "s" : ""}. Review below.`);
+      hideToast(kind, 4000);
+    }
+
+    const fallbackBanner = needsFallback ? `
+      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;">
+        <strong>Only ${urls.length} result${urls.length !== 1 ? "s" : ""} found${ptIsApt ? " in this building" : ""}.</strong>
+        Expand search to ${escapeHtml(fallbackDesc)}?
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button onclick="autoFind('${kind}', true)" style="font-size:12px;padding:5px 12px;">Search Suburb-Wide</button>
+          ${urls.length ? `<button class="ghost" onclick="this.closest('.fallback-banner').remove()" style="font-size:12px;padding:5px 12px;">Keep These ${urls.length}</button>` : `<button class="ghost" onclick="document.getElementById('${kind}-autofind-panel').innerHTML=''" style="font-size:12px;padding:5px 12px;">Dismiss</button>`}
+        </div>
+      </div>` : "";
+
+    const urlList = urls.length ? `
+      <div id="${kind}-autofind-urls" style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;">
+        ${urls.map(url => `
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;font-weight:normal;margin:0;">
+            <input type="checkbox" checked data-url="${escapeHtml(url)}" style="margin-top:2px;flex-shrink:0;width:auto;">
+            <span style="word-break:break-all;color:var(--primary);">${escapeHtml(url)}</span>
+          </label>`).join("")}
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button onclick="importAutoFound('${kind}')">Import Selected</button>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;margin:0;">
+          <input type="checkbox" checked onchange="toggleAllAutoFound('${kind}',this.checked)" style="width:auto;">
+          Select all
+        </label>
+      </div>` : "";
+
+    panel.innerHTML = `
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:12px 16px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <strong style="font-size:13px;">Auto-find results</strong>
+          <button class="ghost" style="font-size:12px;padding:4px 10px;" onclick="document.getElementById('${kind}-autofind-panel').innerHTML=''">Dismiss</button>
+        </div>
+        <div class="fallback-banner">${fallbackBanner}</div>
+        ${urlList}
+      </div>`;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError' || timedOut) {
+      showToast(kind, "error", "Search timed out (>120 s). Try narrowing filters or try again.");
+      hideToast(kind, 6000);
+      return;
+    }
+    if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+      showToast(kind, "error", "Cannot connect to backend — make sure the server is running on port 8000.");
+      hideToast(kind, 8000);
+      return;
+    }
+    showToast(kind, "error", "Search failed: " + err.message.slice(0, 120));
+    hideToast(kind, 5000);
+  }
+}
+
+function toggleAllAutoFound(kind, checked) {
+  const container = document.getElementById(kind + "-autofind-urls");
+  if (!container) return;
+  container.querySelectorAll("input[type=checkbox][data-url]").forEach(cb => { cb.checked = checked; });
+}
+
+async function importAutoFound(kind) {
+  const container = document.getElementById(kind + "-autofind-urls");
+  if (!container) return;
+
+  const selectedUrls = Array.from(
+    container.querySelectorAll("input[type=checkbox][data-url]:checked")
+  ).map(cb => cb.dataset.url);
+
+  if (!selectedUrls.length) {
+    showToast(kind, "error", "Select at least one URL to import.");
+    hideToast(kind, 2500);
+    return;
+  }
+
+  // Dismiss the panel
+  document.getElementById(kind + "-autofind-panel").innerHTML = "";
+
+  // Append new comparable rows pre-filled with the selected URLs
+  const startIdx = state[kind].length;
+  for (const url of selectedUrls) {
+    state[kind].push({
+      url, address: "", fetch_status: "idle", status: "",
+      latitude: null, longitude: null, bedrooms: null, bathrooms: null,
+      carspaces: null, land_size_m2: null, land_size_display: "",
+      price_display: "", sold_date: "", listing_date: "", first_listing: "", last_listing: "",
+      year_built: "", days_on_market: "",
+      thumbnail_path: "", thumbnail_url: "", headline: "",
+      from_rea: true, manual: false,
+      property_type: currentSubjectType(), build_size_m2: null, floor_size_m2: null,
+    });
+  }
+  renderList(kind);
+
+  // Scrape each new row (same flow as fetchAll)
+  showToast(kind, "loading", `Fetching ${selectedUrls.length} listing${selectedUrls.length !== 1 ? "s" : ""}…`);
+  let ok = 0, fail = 0;
+  for (let j = 0; j < selectedUrls.length; j++) {
+    await scrapeComparable(kind, startIdx + j);
+    if (state[kind][startIdx + j].fetch_status === "success") ok++; else fail++;
+    showToast(kind, "loading", `Fetching ${ok + fail} / ${selectedUrls.length}…`);
+  }
+  if (fail === 0) {
+    showToast(kind, "success", `✓ Imported ${ok} listing${ok !== 1 ? "s" : ""}`);
+  } else {
+    showToast(kind, "error", `${ok} ok, ${fail} failed — see row status for details`);
+  }
+  hideToast(kind, 3500);
+  await geocodeAll(kind);
+}
+
+// ---- Generate -------------------------------------------------------
+let _genStartMs = 0;
+function _setProgress(pct, label) {
+  document.getElementById("progress-bar-fill").style.width = pct + "%";
+  document.getElementById("progress-pct").textContent = pct + "%";
+  if (label) document.getElementById("progress-step").textContent = label;
+  const etaEl = document.getElementById("progress-eta");
+  if (pct > 5 && _genStartMs) {
+    const elapsed = (Date.now() - _genStartMs) / 1000;
+    const etaSec  = Math.round(elapsed * (100 - pct) / pct);
+    etaEl.textContent = etaSec > 2 ? `~${etaSec}s remaining` : "Almost done...";
+  } else {
+    etaEl.textContent = "";
+  }
+}
+
+async function generate() {
+  const btn = document.getElementById("generate-btn");
+  const result = document.getElementById("result");
+  const progressBox = document.getElementById("progress-box");
+
+  btn.disabled = true; btn.textContent = "Generating...";
+  result.style.display = "none";
+  progressBox.style.display = "block";
+  _genStartMs = Date.now();
+  _setProgress(0, "Starting...");
+
+  const payload = {
+    session_id: state.session_id,
+    subject: {
+      address: document.getElementById("subject-address").value.trim(),
+      latitude: parseFloat(document.getElementById("subject-lat").value) || null,
+      longitude: parseFloat(document.getElementById("subject-lng").value) || null,
+      bedrooms: parseInt(document.getElementById("subject-bed").value) || null,
+      bathrooms: parseInt(document.getElementById("subject-bath").value) || null,
+      carspaces: parseInt(document.getElementById("subject-car").value) || null,
+      land_size_m2: parseFloat((document.getElementById("subject-land") || {}).value) || null,
+      build_size_m2: parseFloat((document.getElementById("subject-build") || {}).value) || null,
+      floor_size_m2: parseFloat((document.getElementById("subject-floor") || {}).value) || null,
+      property_type: currentSubjectType(),
+      hero_image_path: state.hero_image_path,
+    },
+    sales: state.sales.filter(s => !s._deleted).map((s, i) => ({ ...s, index: i + 1 })),
+    listings: state.listings.filter(s => !s._deleted).map((s, i) => ({ ...s, index: state.sales.filter(x => !x._deleted).length + i + 1 })),
+    google_maps_api_key: document.getElementById("gmaps-key").value.trim(),
+    keep_original_comparables: false,
+    agent_name: document.getElementById("agent-name").value.trim(),
+    agency_name: document.getElementById("agency-name").value.trim(),
+    agent_email: document.getElementById("agent-email").value.trim(),
+    report_date: document.getElementById("report-date").value.trim(),
+    marker_size: document.getElementById("marker-size").value,
+    include_overview_map: document.getElementById("include-overview-map").checked,
+    include_sales_map:    document.getElementById("include-sales-map").checked,
+    include_listings_map: document.getElementById("include-listings-map").checked,
+  };
+
+  try {
+    const r = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+
+    // Read SSE stream line by line
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let downloadUrl = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop(); // keep incomplete last line
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let msg;
+        try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+        if (msg.error) throw new Error(msg.error);
+        if (msg.step !== undefined) _setProgress(msg.pct, msg.step);
+        if (msg.done) {
+          downloadUrl = msg.download_url;
+          _setProgress(100, "Done!");
+        }
+      }
+    }
+
+    progressBox.style.display = "none";
+    result.className = "";
+    result.style.display = "block";
+    result.innerHTML = `<strong>PDF generated successfully.</strong><br>
+                        <a href="${downloadUrl}" target="_blank">Download edited CMA PDF →</a>`;
+    result.scrollIntoView({ behavior: "smooth", block: "end" });
+  } catch (err) {
+    progressBox.style.display = "none";
+    result.className = "error";
+    result.style.display = "block";
+    result.innerHTML = `<strong>Generation failed:</strong><br><pre style="margin: 6px 0 0; font-size: 11px; white-space: pre-wrap;">${escapeHtml(err.message)}</pre>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Generate PDF";
+    updateGenerateButton();
+  }
+}
+
+// Render auto-find filter panels on load
+renderAutoFindFilters('sales');
+renderAutoFindFilters('listings');
+</script>
+</body>
+</html>

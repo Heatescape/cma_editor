@@ -1,0 +1,11 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pydantic>=2.6
+requests>=2.31
+beautifulsoup4>=4.12
+patchright>=1.42
+pypdf>=4.0
+pymupdf>=1.23
+reportlab>=4.1
+Pillow>=10.2
