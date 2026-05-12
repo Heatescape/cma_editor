@@ -1,5 +1,7 @@
 # CMA Editor
 
+**[English](README.md)** &nbsp;·&nbsp; [中文](README.zh-CN.md)
+
 > A local Windows desktop application that regenerates the editable pages of a **Cotality Comparative Market Analysis (CMA)** report — keeping all original pages intact while replacing the cover, maps, and comparable property detail pages with freshly generated, fully editable content.
 
 ---
